@@ -1,0 +1,95 @@
+{
+  "exemplos": {
+    "registro": {
+      "url": "http://localhost:3000/api/auth/register",
+      "method": "POST",
+      "headers": {
+        "Content-Type": "application/json"
+      },
+      "body": {
+        "email": "usuario@exemplo.com",
+        "password": "senha123"
+      }
+    },
+    "login": {
+      "url": "http://localhost:3000/api/auth/login",
+      "method": "POST",
+      "headers": {
+        "Content-Type": "application/json"
+      },
+      "body": {
+        "email": "usuario@exemplo.com",
+        "password": "senha123"
+      }
+    },
+    "refresh_token": {
+      "url": "http://localhost:3000/api/auth/refresh",
+      "method": "POST",
+      "headers": {},
+      "body": {}
+    },
+    "logout": {
+      "url": "http://localhost:3000/api/auth/logout",
+      "method": "POST",
+      "headers": {},
+      "body": {}
+    },
+    "solicitar_recuperacao": {
+      "url": "http://localhost:3000/api/auth/recovery/request",
+      "method": "POST",
+      "headers": {
+        "Content-Type": "application/json"
+      },
+      "body": {
+        "email": "usuario@exemplo.com"
+      }
+    },
+    "redefinir_senha": {
+      "url": "http://localhost:3000/api/auth/recovery/reset",
+      "method": "POST",
+      "headers": {
+        "Content-Type": "application/json"
+      },
+      "body": {
+        "email": "usuario@exemplo.com",
+        "code": "ABC123",
+        "newPassword": "nova_senha123"
+      }
+    }
+  },
+  "respostas_exemplo": {
+    "registro_sucesso": {
+      "success": true,
+      "message": "Usuário registrado com sucesso"
+    },
+    "login_sucesso": {
+      "success": true,
+      "message": "Login realizado com sucesso",
+      "user": {
+        "id": "123",
+        "email": "usuario@exemplo.com"
+      }
+    },
+    "refresh_sucesso": {
+      "success": true,
+      "message": "Token atualizado com sucesso"
+    },
+    "logout_sucesso": {
+      "success": true,
+      "message": "Logout realizado com sucesso"
+    },
+    "recuperacao_solicitada": {
+      "success": true,
+      "message": "Email de recuperação enviado com sucesso"
+    },
+    "senha_redefinida": {
+      "success": true,
+      "message": "Senha redefinida com sucesso"
+    },
+    "erro_exemplo": {
+      "success": false,
+      "message": "Mensagem de erro específica",
+      "error": "Detalhes do erro"
+    }
+  }
+} 
