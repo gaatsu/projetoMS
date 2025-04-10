@@ -21,8 +21,10 @@ Serviço de autenticação e gerenciamento de usuários usando Node.js, Express,
 
 ## 🔧 Configuração
 
+### Ambiente de Desenvolvimento
+
 1. Clone o repositório
-2. Configure as variáveis de ambiente no arquivo `docker-compose.yml`:
+2. Na raiz do projeto, configure as variáveis de ambiente no arquivo `docker-compose.yml`:
    ```yaml
    environment:
      - JWT_SECRET=seu_jwt_secret
@@ -34,8 +36,45 @@ Serviço de autenticação e gerenciamento de usuários usando Node.js, Express,
 
 3. Inicie os serviços:
    ```bash
+   # Na raiz do projeto
    docker-compose up --build
    ```
+
+### Ambiente de Produção
+
+1. Entre na pasta do serviço:
+   ```bash
+   cd auth-service
+   ```
+
+2. Configure as variáveis de ambiente no arquivo `docker-compose.yml`:
+   ```yaml
+   environment:
+     - JWT_SECRET=seu_jwt_secret
+     - JWT_REFRESH_SECRET=seu_jwt_refresh_secret
+     - SMTP_USER=seu_email@gmail.com
+     - SMTP_PASS=sua_senha_de_app_gmail
+     - FRONTEND_URL=https://seu-dominio.com
+   ```
+
+3. Inicie o serviço:
+   ```bash
+   docker-compose up --build
+   ```
+
+### Diferença entre os Ambientes
+
+- **Desenvolvimento** (docker-compose.yml na raiz):
+  - Inclui todos os serviços (auth-service, postgres, rabbitmq)
+  - Usa volumes para desenvolvimento
+  - Expõe portas para acesso local
+  - Configurado para hot-reload
+
+- **Produção** (docker-compose.yml em auth-service):
+  - Contém apenas o serviço de autenticação
+  - Não usa volumes
+  - Configurado para ambiente de produção
+  - Otimizado para deploy
 
 ## 🌐 Endpoints da API
 
@@ -168,18 +207,16 @@ Para consumir eventos em outro serviço:
 
 O sistema utiliza o RabbitMQ para processar emails de forma assíncrona:
 
-1. **Email de Boas-vindas**
-   - Enviado após registro
-   - Template: `welcome.html`
-
-2. **Email de Recuperação de Senha**
+1. **Email de Recuperação de Senha**
    - Enviado após solicitação
-   - Template: `recovery.html`
    - Contém código de 6 dígitos
+   - Template HTML com instruções de recuperação
 
-3. **Email de Confirmação de Alteração de Senha**
+2. **Email de Confirmação de Alteração de Senha**
    - Enviado após alteração de senha
-   - Template: `password-changed.html`
+   - Confirma a alteração bem-sucedida
+
+> **Nota**: O sistema publica eventos para outros serviços através do RabbitMQ. Outros serviços podem se inscrever nesses eventos para realizar ações específicas.
 
 ## 🐳 Estrutura do Projeto
 
@@ -215,7 +252,6 @@ auth-service/
    ```
    Cliente -> API -> AuthService -> UserRepository -> PostgreSQL
                                     -> EventService -> RabbitMQ
-                                    -> EmailService -> RabbitMQ
    ```
 
 2. **Login**
