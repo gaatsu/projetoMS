@@ -4,6 +4,7 @@ const User = require('../../domain/entities/user.entity');
 const userRepository = require('../../infrastructure/repositories/user.repository');
 const emailService = require('../../infrastructure/services/email.service');
 const rabbitmqConfig = require('../../infrastructure/config/rabbitmq.config');
+const eventService = require('../../infrastructure/services/event.service');
 
 class AuthService {
   async register(email, password) {
@@ -23,6 +24,9 @@ class AuthService {
       password: user.password // Senha já está hasheada
     });
     
+    // Publicar evento de usuário criado
+    await eventService.publishUserCreated(savedUser);
+    
     console.log('Usuário registrado com sucesso:', email);
     return this.generateTokens(savedUser);
   }
@@ -32,6 +36,7 @@ class AuthService {
     const user = await userRepository.findByEmail(email);
     if (!user) {
       console.log('Usuário não encontrado:', email);
+      await eventService.publishLoginFailed(email, 'user_not_found');
       throw new Error('Usuário não encontrado');
     }
 
@@ -41,26 +46,46 @@ class AuthService {
     
     if (!isValidPassword) {
       console.log('Senha inválida para:', email);
+      await eventService.publishLoginFailed(email, 'invalid_password');
       throw new Error('Senha inválida');
     }
 
+    // Publicar evento de login bem-sucedido
+    await eventService.publishLoginSuccess(user);
+    
     console.log('Login bem-sucedido para:', email);
     return this.generateTokens(user);
   }
 
-  async refreshToken(refreshToken) {
-    try {
-      const decoded = jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET);
-      const user = await userRepository.findById(decoded.id);
-      
-      if (!user) {
-        throw new Error('Usuário não encontrado');
-      }
-
-      return this.generateTokens(user);
-    } catch (error) {
-      throw new Error('Refresh token inválido');
+  async updateUser(id, updateData) {
+    const user = await userRepository.findById(id);
+    if (!user) {
+      throw new Error('Usuário não encontrado');
     }
+
+    const updatedUser = await userRepository.update(id, {
+      ...user,
+      ...updateData
+    });
+
+    // Publicar evento de usuário atualizado
+    await eventService.publishUserUpdated(updatedUser);
+
+    return updatedUser;
+  }
+
+  async deleteUser(id) {
+    const user = await userRepository.findById(id);
+    if (!user) {
+      throw new Error('Usuário não encontrado');
+    }
+
+    await userRepository.delete(id);
+
+    // Publicar evento de usuário deletado
+    await eventService.publishUserDeleted(user);
+
+    return { message: 'Usuário deletado com sucesso' };
   }
 
   async requestPasswordRecovery(email) {
@@ -111,13 +136,25 @@ class AuthService {
       recoveryCodeExpires: null
     });
 
-    // Publica evento de senha alterada
-    await rabbitmqConfig.sendToQueue('password.changed', {
-      userId: user.id,
-      email: user.email
-    });
+    // Publicar evento de senha alterada
+    await eventService.publishPasswordChanged(updatedUser);
 
     return { message: 'Senha alterada com sucesso' };
+  }
+
+  async refreshToken(refreshToken) {
+    try {
+      const decoded = jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET);
+      const user = await userRepository.findById(decoded.id);
+      
+      if (!user) {
+        throw new Error('Usuário não encontrado');
+      }
+
+      return this.generateTokens(user);
+    } catch (error) {
+      throw new Error('Refresh token inválido');
+    }
   }
 
   generateTokens(user) {

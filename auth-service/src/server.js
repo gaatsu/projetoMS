@@ -6,6 +6,7 @@ const helmet = require('helmet');
 const authRoutes = require('./presentation/routes/auth.routes');
 const { syncDatabase } = require('./infrastructure/config/database.config');
 const emailService = require('./infrastructure/services/email.service');
+const eventService = require('./infrastructure/services/event.service');
 
 const app = express();
 const port = process.env.PORT || 3001;
@@ -35,8 +36,20 @@ const startServer = async () => {
     // Iniciar serviço de email
     await emailService.start();
     
-    app.listen(port, () => {
+    // Inicializa o serviço de eventos
+    await eventService.start();
+    console.log('Serviço de eventos inicializado com sucesso');
+    console.log('Eventos disponíveis:');
+    console.log('- auth.user.created');
+    console.log('- auth.user.updated');
+    console.log('- auth.user.deleted');
+    console.log('- auth.password.changed');
+    console.log('- auth.login.success');
+    console.log('- auth.login.failed');
+    
+    app.listen(port, '0.0.0.0', () => {
       console.log(`Servidor rodando em http://localhost:${port}`);
+      console.log('Para acessar de outros computadores, use o IP da máquina');
       console.log('Rotas disponíveis:');
       console.log('- POST /api/auth/register');
       console.log('- POST /api/auth/login');

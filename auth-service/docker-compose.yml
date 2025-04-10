@@ -21,9 +21,12 @@ services:
       - POSTGRES_PASSWORD=AxHksN5FKaxjCRaeFVxdA
       - FRONTEND_URL=http://localhost:3000
       - NODE_ENV=development
+      - HOST=0.0.0.0
     depends_on:
-      - postgres
-      - rabbitmq
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
     volumes:
       - .:/app
       - /app/node_modules
@@ -44,6 +47,11 @@ services:
     networks:
       - auth-network
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
   rabbitmq:
     image: rabbitmq:3-management-alpine
@@ -55,6 +63,11 @@ services:
     networks:
       - auth-network
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "check_port_connectivity"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
 volumes:
   postgres_data:

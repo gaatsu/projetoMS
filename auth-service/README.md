@@ -1,207 +1,279 @@
-# Sistema de Autenticação
+# Serviço de Autenticação
 
-Sistema de autenticação desenvolvido com Node.js, seguindo os princípios do Domain-Driven Design (DDD) e arquitetura de microserviços.
+Serviço de autenticação e gerenciamento de usuários usando Node.js, Express, JWT, RabbitMQ e PostgreSQL.
 
-## Tecnologias Utilizadas
+## 🚀 Tecnologias
 
 - Node.js
 - Express
 - PostgreSQL
-- Sequelize
 - RabbitMQ
-- JWT
-- Nodemailer
+- JWT (JSON Web Tokens)
+- Docker & Docker Compose
+- Nodemailer (para envio de emails)
+
+## 📋 Pré-requisitos
+
 - Docker
-- Cookie-parser
-- Helmet
+- Docker Compose
+- Node.js (para desenvolvimento local)
+- NPM ou Yarn
 
-## Estrutura do Projeto
-
-```
-src/
-├── domain/
-│   └── entities/
-│       └── user.entity.js
-├── application/
-│   └── services/
-│       └── auth.service.js
-├── infrastructure/
-│   ├── config/
-│   │   ├── database.config.js
-│   │   └── rabbitmq.config.js
-│   ├── repositories/
-│   │   └── user.repository.js
-│   └── services/
-│       └── email.service.js
-└── presentation/
-    ├── controllers/
-    │   └── auth.controller.js
-    └── routes/
-        └── auth.routes.js
-```
-
-## Configuração
-
-### Rodando com Docker
+## 🔧 Configuração
 
 1. Clone o repositório
 2. Configure as variáveis de ambiente no arquivo `docker-compose.yml`:
-   - JWT_SECRET: Chave para assinatura dos tokens JWT
-   - JWT_REFRESH_SECRET: Chave para assinatura dos refresh tokens
-   - SMTP_USER: Email para envio de mensagens
-   - SMTP_PASS: Senha do email
-   - POSTGRES_PASSWORD: Senha do banco de dados
-   - FRONTEND_URL: URL do frontend para configuração do CORS
-3. Execute o comando: `docker-compose up --build`
-4. Acesse:
-   - API: http://localhost:3000
-   - RabbitMQ Management: http://localhost:15672 (guest/guest)
-   - PostgreSQL: localhost:5432
+   ```yaml
+   environment:
+     - JWT_SECRET=seu_jwt_secret
+     - JWT_REFRESH_SECRET=seu_jwt_refresh_secret
+     - SMTP_USER=seu_email@gmail.com
+     - SMTP_PASS=sua_senha_de_app_gmail
+     - FRONTEND_URL=http://localhost:3000
+   ```
 
-## Documentação da API
+3. Inicie os serviços:
+   ```bash
+   docker-compose up --build
+   ```
+
+## 🌐 Endpoints da API
 
 ### Autenticação
 
-Todas as rotas de autenticação estão disponíveis em `/api/auth/`
+- `POST /api/auth/register` - Registro de novo usuário
+  ```json
+  {
+    "email": "usuario@email.com",
+    "password": "senha123"
+  }
+  ```
 
-#### Registro de Usuário
-```http
-POST /api/auth/register
-Content-Type: application/json
+- `POST /api/auth/login` - Login de usuário
+  ```json
+  {
+    "email": "usuario@email.com",
+    "password": "senha123"
+  }
+  ```
 
-{
-  "email": "usuario@exemplo.com",
-  "password": "senha123"
-}
+- `POST /api/auth/refresh` - Renovar token de acesso
+  ```json
+  {
+    "refreshToken": "seu_refresh_token"
+  }
+  ```
 
-Resposta (201):
-{
-  "message": "Usuário registrado com sucesso"
-}
-```
+- `POST /api/auth/logout` - Logout do usuário
 
-#### Login
-```http
-POST /api/auth/login
-Content-Type: application/json
+### Recuperação de Senha
 
-{
-  "email": "usuario@exemplo.com",
-  "password": "senha123"
-}
+- `POST /api/auth/recovery/request` - Solicitar recuperação de senha
+  ```json
+  {
+    "email": "usuario@email.com"
+  }
+  ```
 
-Resposta (200):
-{
-  "message": "Login realizado com sucesso"
-}
-```
+- `POST /api/auth/recovery/reset` - Redefinir senha
+  ```json
+  {
+    "email": "usuario@email.com",
+    "code": "123456",
+    "newPassword": "nova_senha123"
+  }
+  ```
 
-#### Refresh Token
-```http
-POST /api/auth/refresh
-Cookie: refresh_token=<token>
+### Usuário
 
-Resposta (200):
-{
-  "message": "Tokens atualizados com sucesso"
-}
-```
+- `GET /api/auth/user` - Obter dados do usuário atual
+- `PUT /api/auth/user` - Atualizar dados do usuário
+  ```json
+  {
+    "email": "novo_email@email.com"
+  }
+  ```
+- `DELETE /api/auth/user` - Deletar usuário
 
-#### Logout
-```http
-POST /api/auth/logout
-Cookie: auth_token=<token>
+## 🔐 Segurança
 
-Resposta (200):
-{
-  "message": "Logout realizado com sucesso"
-}
-```
-
-#### Solicitar Recuperação de Senha
-```http
-POST /api/auth/recovery/request
-Content-Type: application/json
-
-{
-  "email": "usuario@exemplo.com"
-}
-
-Resposta (200):
-{
-  "message": "Código de recuperação enviado para o email"
-}
-```
-
-#### Redefinir Senha
-```http
-POST /api/auth/recovery/reset
-Content-Type: application/json
-
-{
-  "email": "usuario@exemplo.com",
-  "code": "ABC123",
-  "newPassword": "nova_senha123"
-}
-
-Resposta (200):
-{
-  "message": "Senha alterada com sucesso"
-}
-```
-
-### Códigos de Status
-
-- 200: Sucesso
-- 201: Criado com sucesso
-- 400: Erro de requisição
-- 401: Não autorizado
-- 500: Erro interno do servidor
-
-### Segurança
-
-- Os tokens JWT são armazenados em cookies HttpOnly
-- Token de acesso expira em 15 minutos
-- Refresh token expira em 7 dias
-- Proteção contra CSRF
+- Tokens JWT com expiração curta (15 minutos)
+- Refresh tokens com expiração longa (7 dias)
+- Senhas hasheadas com bcrypt
+- Cookies HttpOnly para armazenamento seguro
 - Headers de segurança com Helmet
-- CORS configurado
+- CORS configurado para origem específica
+- Rate limiting para proteção contra ataques
 
-### Exemplo de Uso no Frontend
+## 📨 Eventos do Sistema
 
-```javascript
-// Configuração do axios
-axios.defaults.withCredentials = true;
+O serviço publica eventos no RabbitMQ para integração com outros serviços:
 
-// Login
-async function login(email, password) {
-  try {
-    const response = await axios.post('http://localhost:3000/api/auth/login', {
-      email,
-      password
-    });
-    // Os cookies são gerenciados automaticamente
-    return response.data;
-  } catch (error) {
-    console.error('Erro no login:', error.response.data);
-    throw error;
-  }
-}
+### Eventos Disponíveis
 
-// Refresh token automático
-axios.interceptors.response.use(
-  (response) => response,
-  async (error) => {
-    if (error.response.status === 401) {
-      try {
-        await axios.post('http://localhost:3000/api/auth/refresh');
-        return axios(error.config);
-      } catch (refreshError) {
-        // Redirecionar para login
-        window.location.href = '/login';
-      }
-    }
-    return Promise.reject(error);
-  }
-);
-``` 
+1. **Criação de Usuário**
+   - Evento: `auth.user.created`
+   - Dados: `{ id, email, createdAt }`
+
+2. **Login**
+   - Evento: `auth.login.success`
+   - Dados: `{ id, email, timestamp }`
+   - Evento: `auth.login.failed`
+   - Dados: `{ email, reason, timestamp }`
+
+3. **Atualização de Usuário**
+   - Evento: `auth.user.updated`
+   - Dados: `{ id, email, updatedAt }`
+
+4. **Deleção de Usuário**
+   - Evento: `auth.user.deleted`
+   - Dados: `{ id, email, deletedAt }`
+
+5. **Alteração de Senha**
+   - Evento: `auth.password.changed`
+   - Dados: `{ id, email, changedAt }`
+
+### Como Consumir Eventos
+
+Para consumir eventos em outro serviço:
+
+1. Conecte ao RabbitMQ:
+   ```javascript
+   const amqp = require('amqplib');
+   
+   async function connect() {
+     const connection = await amqp.connect('amqp://rabbitmq');
+     const channel = await connection.createChannel();
+     return channel;
+   }
+   ```
+
+2. Inscreva-se em um evento:
+   ```javascript
+   async function subscribeToEvent() {
+     const channel = await connect();
+     const queue = 'auth.user.created';
+     
+     await channel.assertQueue(queue);
+     
+     channel.consume(queue, (data) => {
+       const event = JSON.parse(data.content);
+       console.log('Novo usuário criado:', event);
+       channel.ack(data);
+     });
+   }
+   ```
+
+## 📧 Serviço de Email
+
+O sistema utiliza o RabbitMQ para processar emails de forma assíncrona:
+
+1. **Email de Boas-vindas**
+   - Enviado após registro
+   - Template: `welcome.html`
+
+2. **Email de Recuperação de Senha**
+   - Enviado após solicitação
+   - Template: `recovery.html`
+   - Contém código de 6 dígitos
+
+3. **Email de Confirmação de Alteração de Senha**
+   - Enviado após alteração de senha
+   - Template: `password-changed.html`
+
+## 🐳 Estrutura do Projeto
+
+```
+auth-service/
+├── src/
+│   ├── application/
+│   │   ├── services/
+│   │   │   └── auth.service.js
+│   │   └── routes/
+│   │       └── auth.routes.js
+│   ├── domain/
+│   │   └── entities/
+│   │       └── user.entity.js
+│   ├── infrastructure/
+│   │   ├── config/
+│   │   │   ├── database.config.js
+│   │   │   └── rabbitmq.config.js
+│   │   ├── repositories/
+│   │   │   └── user.repository.js
+│   │   └── services/
+│   │       ├── email.service.js
+│   │       └── event.service.js
+│   └── server.js
+├── docker-compose.yml
+├── Dockerfile
+└── package.json
+```
+
+## 🔄 Fluxo de Dados
+
+1. **Registro de Usuário**
+   ```
+   Cliente -> API -> AuthService -> UserRepository -> PostgreSQL
+                                    -> EventService -> RabbitMQ
+                                    -> EmailService -> RabbitMQ
+   ```
+
+2. **Login**
+   ```
+   Cliente -> API -> AuthService -> UserRepository -> PostgreSQL
+                                    -> EventService -> RabbitMQ
+   ```
+
+3. **Recuperação de Senha**
+   ```
+   Cliente -> API -> AuthService -> UserRepository -> PostgreSQL
+                                    -> EmailService -> RabbitMQ
+   ```
+
+## 🛠️ Desenvolvimento
+
+Para desenvolvimento local:
+
+1. Instale as dependências:
+   ```bash
+   npm install
+   ```
+
+2. Configure o arquivo `.env`:
+   ```
+   PORT=3001
+   JWT_SECRET=seu_jwt_secret
+   JWT_REFRESH_SECRET=seu_jwt_refresh_secret
+   SMTP_USER=seu_email@gmail.com
+   SMTP_PASS=sua_senha_de_app_gmail
+   FRONTEND_URL=http://localhost:3000
+   ```
+
+3. Inicie o servidor:
+   ```bash
+   npm run dev
+   ```
+
+## 📝 Logs
+
+O sistema utiliza diferentes níveis de log:
+
+- `info`: Operações normais
+- `warn`: Avisos e tentativas de login falhas
+- `error`: Erros críticos
+
+Para visualizar logs em produção:
+```bash
+docker-compose logs -f auth-service
+```
+
+## 🔍 Monitoramento
+
+Para monitorar o RabbitMQ:
+1. Acesse: `http://localhost:15672`
+2. Credenciais: guest/guest
+3. Monitore:
+   - Filas de eventos
+   - Filas de email
+   - Taxa de mensagens
+   - Consumidores ativos 

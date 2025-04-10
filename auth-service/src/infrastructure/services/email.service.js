@@ -12,17 +12,29 @@ class EmailService {
         pass: process.env.SMTP_PASS
       }
     });
+    this.maxRetries = 5;
+    this.retryDelay = 5000; // 5 segundos
   }
 
   async start() {
-    try {
-      await rabbitmqConfig.connect();
-      await this.setupQueues();
-      console.log('Serviço de email iniciado com sucesso');
-    } catch (error) {
-      console.error('Erro ao iniciar serviço de email:', error);
-      throw error;
+    let retries = 0;
+    while (retries < this.maxRetries) {
+      try {
+        console.log(`Tentativa ${retries + 1} de conectar ao RabbitMQ...`);
+        await rabbitmqConfig.connect();
+        await this.setupQueues();
+        console.log('Serviço de email iniciado com sucesso');
+        return;
+      } catch (error) {
+        console.error(`Erro ao iniciar serviço de email (tentativa ${retries + 1}):`, error);
+        retries++;
+        if (retries < this.maxRetries) {
+          console.log(`Aguardando ${this.retryDelay/1000} segundos antes da próxima tentativa...`);
+          await new Promise(resolve => setTimeout(resolve, this.retryDelay));
+        }
+      }
     }
+    throw new Error('Não foi possível iniciar o serviço de email após várias tentativas');
   }
 
   async setupQueues() {
