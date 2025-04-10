@@ -1,0 +1,59 @@
+version: '3.8'
+
+services:
+  auth-service:
+    build: .
+    ports:
+      - "3000:3000"
+    environment:
+      - PORT=3000
+      - JWT_SECRET=l6o6YwWNEFacUxDN2g3YoC/f8WK8HvRQdV4JwYjH3kA=
+      - RABBITMQ_URL=amqp://rabbitmq
+      - SMTP_HOST=smtp.gmail.com
+      - SMTP_PORT=465
+      - SMTP_USER=alanvitorb98@gmail.com
+      - SMTP_PASS=ZHHQtnzc5z7TBKm6
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=5432
+      - POSTGRES_DB=auth_db
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=AxHksN5FKaxjCRaeFVxdA
+    depends_on:
+      - postgres
+      - rabbitmq
+    volumes:
+      - .:/app
+      - /app/node_modules
+    networks:
+      - auth-network
+
+  postgres:
+    image: postgres:15-alpine
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_DB=auth_db
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=AxHksN5FKaxjCRaeFVxdA
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - auth-network
+
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    networks:
+      - auth-network
+
+volumes:
+  postgres_data:
+  rabbitmq_data:
+
+networks:
+  auth-network:
+    driver: bridge 
